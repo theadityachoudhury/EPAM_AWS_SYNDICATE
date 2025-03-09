@@ -6,13 +6,17 @@ exports.handler = async (event) => {
             statusCode: 400,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+                statusCode: 400,
                 message: `Bad request syntax or unsupported method. Request path: ${event.rawPath}. HTTP method: ${event.requestContext?.http?.method}`,
-            }),
+            })
         };
     }
-    const response = {
+    return {
         statusCode: 200,
-        message: 'Hello from Lambda',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            statusCode: 200,
+            message: "Hello from Lambda",
+        })
     };
-    return response;
 };
