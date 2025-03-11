@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "name": "SnsHandler",
+  "func_name": "lambdas/SnsHandler/index.handler",
+  "resource_type": "lambda",
+  "iam_role_name": "SnsHandler-role",
+  "runtime": "nodejs20.x",
+  "memory": 128,
+  "timeout": 100,
+  "lambda_path": "lambdas\\SnsHandler",
+  "dependencies": [],
+  "event_sources": [
+    {
+      "resource_type": "sns",
+      "topic_name": "lambda_topic"
+    }
+  ],
+  "env_variables": {},
+  "publish_version": true,
+  "alias": "${lambdas_alias_name}",
+  "url_config": {},
+  "ephemeral_storage": 512,
+  "tags": {}
+}
