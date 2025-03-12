@@ -6,47 +6,137 @@
           "Action": [
             "logs:CreateLogGroup",
             "logs:CreateLogStream",
-            "logs:PutLogEvents",
+            "logs:PutLogEvents"
+          ],
+          "Effect": "Allow",
+          "Resource": "arn:aws:logs:*:*:*"
+        },
+        {
+          "Action": [
             "dynamodb:GetItem",
             "dynamodb:Query",
             "dynamodb:PutItem",
-            "dynamodb:Batch*",
-            "dynamodb:DeleteItem",
-            "ssm:PutParameter",
-            "ssm:GetParameter",
-            "kms:Decrypt",
-            "sqs:GetQueueAttributes",
-            "sqs:ReceiveMessage",
-            "sqs:DeleteMessage",
-            "sns:ListTopics"
+            "dynamodb:BatchGetItem",
+            "dynamodb:BatchWriteItem",
+            "dynamodb:DeleteItem"
           ],
           "Effect": "Allow",
+          "Resource": [
+            "arn:aws:dynamodb:*:*:table/your-table-name",
+            "arn:aws:dynamodb:*:*:table/your-table-name/index/*"
+          ]
+        },
+        {
+          "Action": [
+            "ssm:PutParameter",
+            "ssm:GetParameter"
+          ],
+          "Effect": "Allow",
+          "Resource": "arn:aws:ssm:*:*:parameter/your-app/*"
+        },
+        {
+          "Action": "kms:Decrypt",
+          "Effect": "Allow",
+          "Resource": "arn:aws:kms:*:*:key/your-key-id"
+        },
+        {
+          "Action": [
+            "sqs:GetQueueAttributes",
+            "sqs:ReceiveMessage",
+            "sqs:DeleteMessage"
+          ],
+          "Effect": "Allow",
+          "Resource": "arn:aws:sqs:*:*:async_queue"
+        },
+        {
+          "Action": "sqs:GetQueueAttributes",
+          "Effect": "Allow",
+          "Resource": "arn:aws:sqs:*:*:async_queue_dlq"
+        },
+        {
+          "Action": "sns:ListTopics",
+          "Effect": "Allow",
           "Resource": "*"
+        },
+        {
+          "Action": [
+            "sns:Publish"
+          ],
+          "Effect": "Allow",
+          "Resource": "arn:aws:sns:eu-west-1:*:lambda_topic"
         }
       ],
       "Version": "2012-10-17"
     },
     "resource_type": "iam_policy",
-    "tags": {}
+    "tags": {
+      "Environment": "Production",
+      "Project": "ServerlessApp"
+    }
   },
   "async_queue": {
     "resource_type": "sqs_queue",
     "fifo_queue": false,
     "visibility_timeout": 400,
     "delay_seconds": 0,
-    "maximum_message_size": 1024,
-    "message_retention_period": 60,
-    "receive_message_wait_time_seconds": 0,
-    "policy": {},
-    "redrive_policy": {},
+    "maximum_message_size": 262144,
+    "message_retention_period": 1209600,
+    "receive_message_wait_time_seconds": 20,
+    "policy": {
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "lambda.amazonaws.com"
+          },
+          "Action": "sqs:*",
+          "Resource": "arn:aws:sqs:*:*:async_queue"
+        }
+      ]
+    },
+    "redrive_policy": {
+      "deadLetterTargetArn": "arn:aws:sqs:*:*:async_queue_dlq",
+      "maxReceiveCount": 5
+    },
     "content_based_deduplication": false,
-    "tags": {}
+    "tags": {
+      "Environment": "Production",
+      "Project": "ServerlessApp" 
+    },
+    "server_side_encryption": {
+      "enabled": true,
+      "kms_master_key_id": "alias/aws/sqs"
+    }
+  },
+  "async_queue_dlq": {
+    "resource_type": "sqs_queue",
+    "fifo_queue": false,
+    "visibility_timeout": 400,
+    "delay_seconds": 0,
+    "maximum_message_size": 262144,
+    "message_retention_period": 1209600,
+    "receive_message_wait_time_seconds": 0,
+    "server_side_encryption": {
+      "enabled": true,
+      "kms_master_key_id": "alias/aws/sqs"
+    },
+    "tags": {
+      "Environment": "Production",
+      "Project": "ServerlessApp"
+    }
   },
   "lambda_topic": {
     "resource_type": "sns_topic",
     "region": "eu-west-1",
     "event_sources": [],
-    "tags": {}
+    "tags": {
+      "Environment": "Production",
+      "Project": "ServerlessApp"
+    },
+    "server_side_encryption": {
+      "enabled": true,
+      "kms_master_key_id": "alias/aws/sns"
+    }
   },
   "sqs_handler-role": {
     "predefined_policies": [],
@@ -55,7 +145,10 @@
       "lambda-basic-execution"
     ],
     "resource_type": "iam_role",
-    "tags": {}
+    "tags": {
+      "Environment": "Production",
+      "Project": "ServerlessApp"
+    }
   },
   "sns_handler-role": {
     "predefined_policies": [],
@@ -64,7 +157,10 @@
       "lambda-basic-execution"
     ],
     "resource_type": "iam_role",
-    "tags": {}
+    "tags": {
+      "Environment": "Production",
+      "Project": "ServerlessApp"
+    }
   },
   "api_handler-role": {
     "predefined_policies": [],
@@ -73,6 +169,55 @@
       "lambda-basic-execution"
     ],
     "resource_type": "iam_role",
-    "tags": {}
+    "tags": {
+      "Environment": "Production",
+      "Project": "ServerlessApp"
+    }
+  },
+  "api_gateway": {
+    "resource_type": "api_gateway",
+    "stage_name": "prod",
+    "throttling": {
+      "rate": 10,
+      "burst": 20
+    },
+    "logging_level": "INFO",
+    "tags": {
+      "Environment": "Production",
+      "Project": "ServerlessApp"
+    }
+  },
+  "monitoring": {
+    "resource_type": "cloudwatch_alarm",
+    "alarms": [
+      {
+        "name": "SQS-DLQ-Messages",
+        "metric_name": "ApproximateNumberOfMessagesVisible",
+        "namespace": "AWS/SQS",
+        "dimensions": {
+          "QueueName": "async_queue_dlq"
+        },
+        "comparison_operator": "GreaterThanOrEqualToThreshold",
+        "threshold": 1,
+        "period": 300,
+        "evaluation_periods": 1,
+        "statistic": "Sum",
+        "alarm_actions": ["arn:aws:sns:eu-west-1:*:alerts_topic"]
+      },
+      {
+        "name": "Lambda-Errors",
+        "metric_name": "Errors",
+        "namespace": "AWS/Lambda",
+        "dimensions": {
+          "FunctionName": "${FunctionName}"
+        },
+        "comparison_operator": "GreaterThanThreshold",
+        "threshold": 0,
+        "period": 300,
+        "evaluation_periods": 1,
+        "statistic": "Sum",
+        "alarm_actions": ["arn:aws:sns:eu-west-1:*:alerts_topic"]
+      }
+    ]
   }
 }
