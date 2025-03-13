@@ -1,20 +1,19 @@
 {
   "version": "1.0",
-  "name": "SnsHandler",
-  "func_name": "lambdas/SnsHandler/index.handler",
+  "name": "sqs_handler",
+  "func_name": "lambdas/sqs_handler/index.handler",
   "resource_type": "lambda",
-  "iam_role_name": "SnsHandler-role",
+  "iam_role_name": "sqs_handler-role",
   "runtime": "nodejs20.x",
   "memory": 128,
   "timeout": 100,
-  "lambda_path": "lambdas\\SnsHandler",
+  "lambda_path": "lambdas\\sqs_handler",
   "dependencies": [],
-  "event_sources": [
-    {
-      "resource_type": "sns",
-      "topic_name": "lambda_topic"
-    }
-  ],
+  "event_sources": [{
+    "resource_type": "sqs_trigger",
+    "target_queue": "async_queue",
+    "batch_size": 10
+  }],
   "env_variables": {},
   "publish_version": true,
   "alias": "${lambdas_alias_name}",

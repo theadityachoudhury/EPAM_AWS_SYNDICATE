@@ -1,5 +1,5 @@
 {
-  "name": "SqsHandler",
+  "name": "sns_handler",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
